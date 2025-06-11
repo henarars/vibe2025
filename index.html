@@ -40,6 +40,11 @@
             padding: 8px;
             width: 20%;
         }
+        .edit-input {
+            width: 100%;
+            padding: 5px;
+            box-sizing: border-box;
+        }
     </style>
 </head>
 <body>
@@ -60,43 +65,57 @@
 </table>
 
 <div class="add-form">
-    <input type="text" id="newItem" placeholder="Enter new item">
-    <button onclick="addItem()">Add</button>
+    <input type="text" id="newItem" placeholder="Enter new item" disabled>
+    <button onclick="addItem()" disabled>Add</button>
 </div>
 
 <script>
-    let items = [];
-    let nextId = 1;
+    async function startEdit(id, currentText) {
+        const row = document.querySelector(`tr[data-id="${id}"]`);
+        if (!row) return;
 
-    function renderList() {
-        const listBody = document.getElementById('listBody');
-        listBody.innerHTML = '';
-
-        items.forEach((item, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${item.text}</td>
-                <td><button onclick="removeItem(${index})">Remove</button></td>
-            `;
-            listBody.appendChild(row);
-        });
+        row.innerHTML = `
+            <td>${id}</td>
+            <td><input type="text" class="edit-input" value="${currentText}" id="edit-${id}"></td>
+            <td>
+                <button onclick="saveEdit(${id})">Save</button>
+                <button onclick="cancelEdit(${id}, '${currentText}')">Cancel</button>
+            </td>
+        `;
     }
 
-    function addItem() {
-        const newItemInput = document.getElementById('newItem');
-        const newItemText = newItemInput.value.trim();
+    async function saveEdit(id) {
+        const newText = document.getElementById(`edit-${id}`).value.trim();
+        if (!newText) return;
 
-        if (newItemText) {
-            items.push({ id: nextId++, text: newItemText });
-            newItemInput.value = '';
-            renderList();
+        try {
+            const response = await fetch(`/update/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: newText })
+            });
+            
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                console.error('Failed to update item');
+            }
+        } catch (error) {
+            console.error('Error:', error);
         }
     }
 
-    function removeItem(index) {
-        items.splice(index, 1);
-        renderList();
+    function cancelEdit(id, originalText) {
+        const row = document.querySelector(`tr[data-id="${id}"]`);
+        if (!row) return;
+
+        row.innerHTML = `
+            <td>${id}</td>
+            <td>${originalText}</td>
+            <td><button onclick="startEdit(${id}, '${originalText}')">Edit</button></td>
+        `;
     }
 </script>
 

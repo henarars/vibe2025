@@ -65,10 +65,9 @@
 </div>
 
 <script>
-    let items = [];
-    let nextId = 1;
-
-    function renderList() {
+    async function renderList() {
+        const response = await fetch('/items');
+        const items = await response.json();
         const listBody = document.getElementById('listBody');
         listBody.innerHTML = '';
 
@@ -77,27 +76,39 @@
             row.innerHTML = `
                 <td>${index + 1}</td>
                 <td>${item.text}</td>
-                <td><button onclick="removeItem(${index})">Remove</button></td>
+                <td><button onclick="removeItem(${item.id})">Remove</button></td>
             `;
             listBody.appendChild(row);
         });
     }
 
-    function addItem() {
+    async function addItem() {
         const newItemInput = document.getElementById('newItem');
         const newItemText = newItemInput.value.trim();
 
         if (newItemText) {
-            items.push({ id: nextId++, text: newItemText });
+            await fetch('/items', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: newItemText })
+            });
+            
             newItemInput.value = '';
-            renderList();
+            await renderList();
         }
     }
 
-    function removeItem(index) {
-        items.splice(index, 1);
-        renderList();
+    async function removeItem(id) {
+        await fetch(`/items/${id}`, {
+            method: 'DELETE'
+        });
+        await renderList();
     }
+
+    // Initial render
+    document.addEventListener('DOMContentLoaded', renderList);
 </script>
 
 </body>
